@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maya</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 50%, #0f0f1a 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .logo {
+            font-size: 42px;
+            font-weight: 200;
+            letter-spacing: 8px;
+            margin-bottom: 60px;
+            color: #e0e0e0;
+        }
+
+        .maya-button {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: none;
+            background: radial-gradient(circle at 30% 30%, #8b5cf6, #6d28d9 50%, #4c1d95);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow:
+                0 0 60px rgba(139, 92, 246, 0.3),
+                0 0 100px rgba(139, 92, 246, 0.1),
+                inset 0 0 30px rgba(255, 255, 255, 0.1);
+        }
+
+        .maya-button:hover {
+            transform: scale(1.02);
+            box-shadow:
+                0 0 80px rgba(139, 92, 246, 0.4),
+                0 0 120px rgba(139, 92, 246, 0.2),
+                inset 0 0 30px rgba(255, 255, 255, 0.15);
+        }
+
+        .maya-button.listening {
+            background: radial-gradient(circle at 30% 30%, #f472b6, #db2777 50%, #9d174d);
+            animation: pulse 1.5s ease-in-out infinite;
+            box-shadow:
+                0 0 80px rgba(244, 114, 182, 0.5),
+                0 0 120px rgba(244, 114, 182, 0.2),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .maya-button.speaking {
+            background: radial-gradient(circle at 30% 30%, #34d399, #059669 50%, #065f46);
+            box-shadow:
+                0 0 80px rgba(52, 211, 153, 0.5),
+                0 0 120px rgba(52, 211, 153, 0.2),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .maya-button.processing {
+            background: radial-gradient(circle at 30% 30%, #fbbf24, #d97706 50%, #92400e);
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes spin {
+            0% { box-shadow: 0 0 60px rgba(251, 191, 36, 0.5); }
+            50% { box-shadow: 0 0 100px rgba(251, 191, 36, 0.7); }
+            100% { box-shadow: 0 0 60px rgba(251, 191, 36, 0.5); }
+        }
+
+        .icon {
+            width: 70px;
+            height: 70px;
+            fill: rgba(255, 255, 255, 0.9);
+        }
+
+        .status {
+            margin-top: 50px;
+            font-size: 18px;
+            color: #888;
+            letter-spacing: 2px;
+            min-height: 30px;
+        }
+
+        .transcript {
+            margin-top: 30px;
+            max-width: 400px;
+            text-align: center;
+            font-size: 16px;
+            color: #aaa;
+            line-height: 1.6;
+            min-height: 50px;
+        }
+
+        .rings {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            opacity: 0;
+        }
+
+        .maya-button.listening .ring {
+            animation: ring-pulse 1.5s ease-out infinite;
+            border-color: rgba(244, 114, 182, 0.4);
+        }
+
+        @keyframes ring-pulse {
+            0% { width: 200px; height: 200px; opacity: 0.6; }
+            100% { width: 350px; height: 350px; opacity: 0; }
+        }
+
+        .ring:nth-child(1) { animation-delay: 0s; }
+        .ring:nth-child(2) { animation-delay: 0.5s; }
+        .ring:nth-child(3) { animation-delay: 1s; }
+    </style>
+</head>
+<body>
+    <div class="logo">MAYA</div>
+
+    <button class="maya-button" id="mayaBtn">
+        <div class="rings">
+            <div class="ring"></div>
+            <div class="ring"></div>
+            <div class="ring"></div>
+        </div>
+        <svg class="icon" viewBox="0 0 24 24" id="micIcon">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+        </svg>
+    </button>
+
+    <div class="status" id="status">Click to talk</div>
+    <div class="transcript" id="transcript"></div>
+
+    <script>
+        const btn = document.getElementById('mayaBtn');
+        const status = document.getElementById('status');
+        const transcript = document.getElementById('transcript');
+
+        let ws = null;
+        let mediaRecorder = null;
+        let audioContext = null;
+        let isListening = false;
+
+        // Connect to WebSocket
+        function connect() {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${location.host}/ws`);
+
+            ws.onopen = () => {
+                status.textContent = 'Click to talk';
+            };
+
+            ws.onmessage = async (e) => {
+                const data = JSON.parse(e.data);
+
+                if (data.type === 'speaking') {
+                    btn.className = 'maya-button speaking';
+                    status.textContent = 'Maya is speaking...';
+                }
+
+                if (data.type === 'text') {
+                    transcript.textContent = data.text;
+                }
+
+                if (data.type === 'audio') {
+                    await playAudio(data.audio);
+                    btn.className = 'maya-button';
+                    status.textContent = 'Click to talk';
+                }
+            };
+
+            ws.onclose = () => {
+                status.textContent = 'Reconnecting...';
+                setTimeout(connect, 1000);
+            };
+
+            ws.onerror = () => {
+                status.textContent = 'Connection error';
+            };
+        }
+
+        // Play base64 PCM audio
+        async function playAudio(b64) {
+            if (!audioContext) {
+                audioContext = new AudioContext({ sampleRate: 24000 });
+            }
+
+            const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+            const samples = new Float32Array(bytes.length / 2);
+            const view = new DataView(bytes.buffer);
+
+            for (let i = 0; i < samples.length; i++) {
+                samples[i] = view.getInt16(i * 2, true) / 32768;
+            }
+
+            const buffer = audioContext.createBuffer(1, samples.length, 24000);
+            buffer.getChannelData(0).set(samples);
+
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+
+            return new Promise(resolve => {
+                source.onended = resolve;
+                source.start();
+            });
+        }
+
+        // Start listening
+        async function startListening() {
+            if (isListening) return;
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+
+                if (!audioContext) {
+                    audioContext = new AudioContext({ sampleRate: 24000 });
+                }
+
+                mediaRecorder = new MediaRecorder(stream);
+                const chunks = [];
+
+                mediaRecorder.ondataavailable = e => chunks.push(e.data);
+
+                mediaRecorder.onstop = async () => {
+                    stream.getTracks().forEach(t => t.stop());
+
+                    const blob = new Blob(chunks);
+                    const buffer = await blob.arrayBuffer();
+                    const b64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+
+                    btn.className = 'maya-button processing';
+                    status.textContent = 'Processing...';
+
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'audio', data: b64 }));
+                    }
+                };
+
+                mediaRecorder.start();
+                isListening = true;
+                btn.className = 'maya-button listening';
+                status.textContent = 'Listening...';
+
+            } catch (err) {
+                status.textContent = 'Allow microphone access';
+                console.error(err);
+            }
+        }
+
+        // Stop listening
+        function stopListening() {
+            if (!isListening) return;
+
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+            isListening = false;
+        }
+
+        // Button events - hold to talk
+        btn.addEventListener('mousedown', startListening);
+        btn.addEventListener('mouseup', stopListening);
+        btn.addEventListener('mouseleave', stopListening);
+        btn.addEventListener('touchstart', e => { e.preventDefault(); startListening(); });
+        btn.addEventListener('touchend', e => { e.preventDefault(); stopListening(); });
+
+        // Initialize
+        connect();
+    </script>
+</body>
+</html>

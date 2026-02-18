@@ -1,0 +1,96 @@
+# Maya Voice Training Configuration
+# Based on Sesame AI research for optimal quality
+
+# =============================================================================
+# Dataset Configuration
+# =============================================================================
+dataset:
+  name: "expresso"
+  speaker: "talia"  # Options: talia, elisabeth, jerry, thomas
+
+  # Quality filters
+  min_duration_sec: 1.0
+  max_duration_sec: 30.0
+  min_words: 3
+  max_silence_ratio: 0.5
+  min_snr_db: 15
+
+# =============================================================================
+# Audio Processing
+# =============================================================================
+audio:
+  sample_rate: 24000  # CSM native rate
+  target_peak_db: -6.0
+  normalize: true
+  remove_dc_offset: true
+
+# =============================================================================
+# Model Configuration
+# =============================================================================
+model:
+  name: "sesame/csm-1b"
+  use_bf16: true
+  max_seq_length: 2048  # ~2 min of context
+
+# =============================================================================
+# Training Configuration (Sesame-recommended)
+# =============================================================================
+training:
+  # Approach
+  method: "full_finetune"  # full_finetune or lora
+
+  # Batch settings
+  batch_size: 4
+  gradient_accumulation_steps: 4  # Effective batch 16
+
+  # Learning rate
+  learning_rate: 3.0e-5  # Conservative for audio
+  warmup_steps: 500
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+
+  # Duration
+  num_epochs: 25
+
+  # Memory optimization
+  use_gradient_checkpointing: true
+  use_fused_adam: true
+
+  # Saving
+  save_steps: 500
+  eval_steps: 250
+  save_total_limit: 3
+  log_steps: 50
+
+# =============================================================================
+# LoRA Configuration (if using LoRA)
+# =============================================================================
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+
+# =============================================================================
+# Evaluation Targets (Maya-level quality)
+# =============================================================================
+evaluation:
+  utmos_target: 4.0           # Naturalness (1-5 scale)
+  speaker_similarity: 0.85    # Cosine similarity
+  cer_target: 0.05            # Character error rate
+  wer_target: 0.10            # Word error rate
+
+# =============================================================================
+# Hardware
+# =============================================================================
+hardware:
+  device: "cuda"
+  num_workers: 4
+  pin_memory: true

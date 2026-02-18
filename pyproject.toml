@@ -1,0 +1,221 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "maya"
+version = "0.1.0"
+description = "Real-time conversational voice AI pipeline with sub-2-second latency"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Pritam Dash", email = "ipritamdash@gmail.com"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+keywords = ["voice-ai", "speech-to-speech", "tts", "csm", "conversational-ai", "real-time"]
+
+dependencies = [
+    # Deep Learning Framework
+    "torch>=2.1.0",
+    "torchaudio>=2.1.0",
+    "transformers>=4.36.0,<4.47.0",
+
+    # Moshi S2S
+    "moshi>=0.2.0",
+    "huggingface_hub>=0.20.0",
+    "safetensors>=0.4.0,<0.6.0",
+    "sentencepiece>=0.2.0",
+
+    # Audio Processing
+    "numpy>=1.26.0,<2.0.0",
+    "scipy>=1.11.0",
+    "soundfile>=0.12.0",
+    "librosa>=0.10.0",
+    "resampy>=0.4.0",
+
+    # Silero VAD
+    "silero-vad>=5.1",
+
+    # Web Framework
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.25.0",
+    "websockets>=12.0",
+    "python-multipart>=0.0.6",
+
+    # Configuration
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0.1",
+
+    # Logging & Monitoring
+    "structlog>=24.1.0",
+    "prometheus-client>=0.19.0",
+
+    # Utilities
+    "httpx>=0.26.0",
+    "aiofiles>=23.2.0",
+    "tenacity>=8.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "pytest-timeout>=2.2.0",
+    "pytest-benchmark>=4.0.0",
+    "mypy>=1.8.0",
+    "ruff>=0.1.0",
+    "black>=24.1.0",
+    "isort>=5.13.0",
+    "pre-commit>=3.6.0",
+]
+
+chatterbox = [
+    # Chatterbox TTS - install separately due to complex build deps
+    # Run: pip install chatterbox-tts --no-build-isolation
+    "diffusers>=0.29.0",
+    "einops>=0.8.0",
+    "nemo-text-processing>=1.0.0",
+]
+
+ui = [
+    "gradio>=4.14.0",
+]
+
+webrtc = [
+    "aiortc>=1.6.0",
+    "av>=11.0.0",
+]
+
+all = [
+    "maya[dev,ui,webrtc]",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/ipritamdash/maya-csm1b-whole-pipeline"
+"Bug Tracker" = "https://github.com/ipritamdash/maya-csm1b-whole-pipeline/issues"
+
+[project.scripts]
+maya = "maya.api.app:main"
+maya-download-models = "scripts.download_models:main"
+maya-verify = "scripts.verify_setup:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["maya*"]
+
+[tool.setuptools.package-data]
+maya = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests that require GPU",
+    "integration: marks integration tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+namespace_packages = true
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = [
+    "moshi.*",
+    "chatterbox.*",
+    "silero_vad.*",
+    "librosa.*",
+    "soundfile.*",
+    "gradio.*",
+    "aiortc.*",
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "ARG",    # flake8-unused-arguments
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "PTH",    # flake8-use-pathlib
+    "ERA",    # eradicate
+    "RUF",    # ruff-specific
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function calls in argument defaults
+    "B904",   # raise without from inside except
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["maya"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["maya"]
+
+[tool.coverage.run]
+source = ["src/maya"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

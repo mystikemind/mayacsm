@@ -1,0 +1,190 @@
+"""
+Speech-to-Text Engine - faster-whisper (CTranslate2)
+
+Transcribes user speech to text with high accuracy and speed.
+
+Features:
+- Uses faster-whisper (CTranslate2 backend) for 3-5x speedup over OpenAI whisper
+- large-v3-turbo model for best speed/accuracy tradeoff
+- GPU acceleration with float16
+- English-only mode for speed
+- Greedy decoding (beam_size=1) for lowest latency
+- VAD filtering to skip silence segments
+"""
+
+import torch
+import numpy as np
+import logging
+from typing import Optional, List
+import time
+
+from ..config import AUDIO, DEVICES
+
+logger = logging.getLogger(__name__)
+
+
+class STTEngine:
+    """
+    faster-whisper wrapper for speech transcription.
+
+    Optimizations:
+    - CTranslate2 backend (3-5x faster than OpenAI whisper)
+    - large-v3-turbo model
+    - Greedy decoding (beam_size=1)
+    - English-only
+    - VAD filtering
+    """
+
+    def __init__(self):
+        self._model = None
+        self._initialized = False
+
+        # Performance tracking
+        self._total_transcriptions = 0
+        self._total_time = 0.0
+
+    def initialize(self) -> None:
+        """Load faster-whisper model."""
+        if self._initialized:
+            return
+
+        logger.info(f"Loading faster-whisper large-v3-turbo on GPU {DEVICES.stt_gpu}...")
+        start = time.time()
+
+        try:
+            from faster_whisper import WhisperModel
+
+            self._model = WhisperModel(
+                "large-v3-turbo",
+                device="cuda",
+                device_index=DEVICES.stt_gpu,
+                compute_type="float16",
+            )
+
+            elapsed = time.time() - start
+            logger.info(f"faster-whisper loaded in {elapsed:.1f}s")
+            self._initialized = True
+
+        except Exception as e:
+            logger.error(f"Failed to load faster-whisper: {e}")
+            # Fallback to OpenAI whisper
+            try:
+                logger.info("Falling back to OpenAI whisper...")
+                import whisper
+                self._model = whisper.load_model("turbo", device="cuda")
+                self._use_openai = True
+                logger.info("Loaded OpenAI Whisper turbo as fallback")
+                self._initialized = True
+            except Exception as e2:
+                logger.error(f"Fallback also failed: {e2}")
+                raise
+
+    def transcribe(self, audio: torch.Tensor) -> str:
+        """
+        Transcribe audio to text.
+
+        Args:
+            audio: Audio tensor at 24kHz
+
+        Returns:
+            Transcribed text
+        """
+        if not self._initialized:
+            self.initialize()
+
+        start = time.time()
+
+        # Convert to numpy float32
+        if isinstance(audio, torch.Tensor):
+            audio_np = audio.cpu().numpy()
+        else:
+            audio_np = audio
+
+        if audio_np.dtype != np.float32:
+            audio_np = audio_np.astype(np.float32)
+
+        # Ensure 1D
+        if audio_np.ndim > 1:
+            audio_np = audio_np.squeeze()
+
+        # Resample from 24kHz to 16kHz using proper sinc interpolation
+        if AUDIO.sample_rate != 16000:
+            try:
+                import torchaudio
+                audio_tensor = torch.from_numpy(audio_np).unsqueeze(0)
+                audio_16k = torchaudio.functional.resample(
+                    audio_tensor, AUDIO.sample_rate, 16000
+                )
+                audio_np = audio_16k.squeeze(0).numpy()
+            except ImportError:
+                # Fallback to linear interpolation
+                target_length = int(len(audio_np) * 16000 / AUDIO.sample_rate)
+                indices = np.linspace(0, len(audio_np) - 1, target_length)
+                audio_np = np.interp(indices, np.arange(len(audio_np)), audio_np).astype(np.float32)
+
+        # Check for OpenAI whisper fallback
+        if hasattr(self, '_use_openai') and self._use_openai:
+            result = self._model.transcribe(
+                audio_np,
+                language="en",
+                fp16=True,
+                verbose=False,
+            )
+            text = result["text"].strip()
+        else:
+            # faster-whisper transcription
+            segments, info = self._model.transcribe(
+                audio_np,
+                language="en",
+                beam_size=1,          # Greedy for lowest latency
+                vad_filter=True,      # Skip silence segments
+                vad_parameters=dict(
+                    min_silence_duration_ms=300,
+                ),
+            )
+            # Collect all segment texts
+            text = " ".join(seg.text.strip() for seg in segments).strip()
+
+        # Track performance
+        elapsed = time.time() - start
+        self._total_transcriptions += 1
+        self._total_time += elapsed
+
+        logger.debug(f"Transcribed in {elapsed*1000:.0f}ms: '{text[:50]}'")
+
+        return text
+
+    def transcribe_stream(self, audio_chunks: List[torch.Tensor]) -> str:
+        """
+        Transcribe streaming audio chunks.
+
+        Args:
+            audio_chunks: List of audio tensors
+
+        Returns:
+            Transcribed text
+        """
+        if not audio_chunks:
+            return ""
+
+        combined = torch.cat(audio_chunks, dim=0)
+        return self.transcribe(combined)
+
+    @property
+    def is_initialized(self) -> bool:
+        return self._initialized
+
+    @property
+    def average_latency_ms(self) -> float:
+        """Average transcription latency in milliseconds."""
+        if self._total_transcriptions == 0:
+            return 0.0
+        return (self._total_time / self._total_transcriptions) * 1000
+
+    def get_stats(self) -> dict:
+        """Get performance statistics."""
+        return {
+            "total_transcriptions": self._total_transcriptions,
+            "total_time": self._total_time,
+            "average_latency_ms": self.average_latency_ms,
+        }

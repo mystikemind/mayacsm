@@ -1,0 +1,178 @@
+# Project Maya - Kubernetes Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: maya-voice-ai
+  namespace: maya
+  labels:
+    app: maya
+    component: voice-ai
+spec:
+  replicas: 1  # Single replica per GPU
+  selector:
+    matchLabels:
+      app: maya
+      component: voice-ai
+  strategy:
+    type: Recreate  # Required for GPU workloads
+  template:
+    metadata:
+      labels:
+        app: maya
+        component: voice-ai
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: maya-service-account
+
+      # Node selection for GPU nodes
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+
+      # Tolerations for GPU taints
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+
+      # Init container to download models
+      initContainers:
+        - name: model-downloader
+          image: maya-voice-ai:latest
+          command:
+            - python
+            - scripts/download_models.py
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: maya-secrets
+                  key: hf-token
+            - name: HF_HOME
+              value: /models
+          volumeMounts:
+            - name: model-cache
+              mountPath: /models
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "1"
+            limits:
+              memory: "8Gi"
+              cpu: "2"
+
+      containers:
+        - name: maya
+          image: maya-voice-ai:latest
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: websocket
+              containerPort: 8765
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+
+          env:
+            - name: MAYA_ENVIRONMENT
+              value: "production"
+            - name: MAYA_LOG_JSON
+              value: "true"
+            - name: MAYA_LOG_LEVEL
+              value: "INFO"
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: maya-secrets
+                  key: hf-token
+            - name: HF_HOME
+              value: /models
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0"
+            - name: PYTORCH_CUDA_ALLOC_CONF
+              value: "max_split_size_mb:512"
+
+          volumeMounts:
+            - name: model-cache
+              mountPath: /models
+            - name: config
+              mountPath: /home/maya/app/config
+              readOnly: true
+
+          # Resource requests and limits
+          resources:
+            requests:
+              memory: "16Gi"
+              cpu: "4"
+              nvidia.com/gpu: 1
+            limits:
+              memory: "32Gi"
+              cpu: "8"
+              nvidia.com/gpu: 1
+
+          # Probes
+          startupProbe:
+            httpGet:
+              path: /health/startup
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30  # 5 minutes total
+
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+
+          # Security context
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+
+      volumes:
+        - name: model-cache
+          persistentVolumeClaim:
+            claimName: maya-models-pvc
+        - name: config
+          configMap:
+            name: maya-config
+
+      # Pod disruption budget
+      terminationGracePeriodSeconds: 60
+
+---
+# PersistentVolumeClaim for model cache
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: maya-models-pvc
+  namespace: maya
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: fast-ssd
+  resources:
+    requests:
+      storage: 50Gi

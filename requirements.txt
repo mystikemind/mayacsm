@@ -1,0 +1,29 @@
+# Maya Voice AI - Requirements
+
+# Core
+torch>=2.0.0
+torchaudio>=2.0.0
+
+# Web Server
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+websockets>=11.0
+
+# Speech-to-Text
+faster-whisper>=0.10.0
+
+# Language Model
+transformers>=4.36.0
+accelerate>=0.25.0
+bitsandbytes>=0.41.0
+
+# Audio Processing
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Voice Activity Detection (Silero)
+# Loaded via torch.hub
+
+# Utilities
+pydantic>=2.0.0
+python-multipart>=0.0.6

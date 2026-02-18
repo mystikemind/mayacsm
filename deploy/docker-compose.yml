@@ -1,0 +1,112 @@
+# Project Maya - Docker Compose Configuration
+# For local development and testing with GPU support
+
+version: "3.8"
+
+services:
+  maya:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: production
+    image: maya-voice-ai:latest
+    container_name: maya-voice-ai
+
+    # GPU access
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    # Port mapping
+    ports:
+      - "8080:8080"   # HTTP API
+      - "8765:8765"   # WebSocket
+      - "9090:9090"   # Metrics
+
+    # Environment
+    environment:
+      - MAYA_ENVIRONMENT=production
+      - MAYA_LOG_JSON=true
+      - MAYA_LOG_LEVEL=INFO
+      - HF_TOKEN=${HF_TOKEN}
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+
+    # Volumes
+    volumes:
+      - maya-models:/home/maya/app/models
+      - maya-logs:/home/maya/app/logs
+      - ../config:/home/maya/app/config:ro
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    # Resource limits
+    shm_size: "8gb"  # Shared memory for PyTorch
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # Optional: Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: maya-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Optional: Grafana for dashboards
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: maya-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+volumes:
+  maya-models:
+    driver: local
+  maya-logs:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  default:
+    name: maya-network

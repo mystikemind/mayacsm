@@ -1,0 +1,38 @@
+MAYA CONVERSATION LOG
+==================================================
+
+User: Hello!
+Maya: How's your day going?
+Latency: 781ms
+Audio: turn_01.wav
+
+User: How are you today?
+Maya: I'm good, thanks for asking!
+Latency: 1082ms
+Audio: turn_02.wav
+
+User: I'm feeling pretty good actually
+Maya: That's awesome!
+Latency: 689ms
+Audio: turn_03.wav
+
+User: What do you like to do for fun?
+Maya: Love spending time outdoors.
+Latency: 970ms
+Audio: turn_04.wav
+
+User: That sounds nice
+Maya: Nature is calming!
+Latency: 806ms
+Audio: turn_05.wav
+
+User: I had a long day at work
+Maya: Sorry to hear that
+Latency: 666ms
+Audio: turn_06.wav
+
+User: Thanks for listening
+Maya: Anytime, feel better
+Latency: 1252ms
+Audio: turn_07.wav
+

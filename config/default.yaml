@@ -1,0 +1,77 @@
+# Project Maya - Default Configuration
+# This file contains default settings for development
+
+project:
+  name: maya
+  version: "0.1.0"
+  environment: development
+  debug: true
+  log_level: DEBUG
+  log_json: false
+
+# Moshi S2S Engine
+moshi:
+  model_name: "kyutai/moshika-pytorch-bf16"
+  quantization: "int8"
+  device: "cuda:0"
+  sample_rate: 24000
+  frame_duration_ms: 80
+  warmup_on_init: true
+  temperature: 0.8
+  temperature_text: 0.7
+  top_k: 250
+  top_k_text: 25
+
+# Chatterbox TTS
+chatterbox:
+  voice: "default"
+  exaggeration: 0.6
+  cfg_weight: 0.5
+  device: "cuda:0"
+  enable_streaming: true
+  chunk_size: 512
+
+# Voice Activity Detection
+vad:
+  threshold: 0.5
+  min_speech_duration_ms: 250
+  min_silence_duration_ms: 300
+  speech_pad_ms: 30
+
+# Server Configuration
+server:
+  host: "0.0.0.0"
+  http_port: 8080
+  ws_port: 8765
+  workers: 1
+  cors_origins:
+    - "*"
+
+# Session Management
+session:
+  max_duration_seconds: 270
+  context_window_turns: 20
+  idle_timeout_seconds: 60
+  context_reset_warning_seconds: 30
+  auto_reset_context: true
+
+# Humanization
+humanize:
+  enable_fillers: true
+  filler_probability: 0.3
+  enable_pauses: true
+  enable_breath_sounds: true
+  breath_volume: 0.25
+
+# Emotion Detection
+emotion:
+  enabled: true
+  model_name: "r-f/wav2vec-english-speech-emotion-recognition"
+  device: "cuda:0"
+  update_interval_ms: 500
+
+# Performance Targets
+performance:
+  quick_path_latency_target_ms: 250
+  enhanced_path_latency_target_ms: 400
+  max_vram_usage_gb: 22.0

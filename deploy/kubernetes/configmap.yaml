@@ -1,0 +1,66 @@
+# Project Maya - Kubernetes ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: maya-config
+  namespace: maya
+  labels:
+    app: maya
+data:
+  production.yaml: |
+    project:
+      name: maya
+      version: "0.1.0"
+      environment: production
+      debug: false
+      log_level: INFO
+      log_json: true
+
+    moshi:
+      model_name: "kyutai/moshika-pytorch-bf16"
+      quantization: "int8"
+      device: "cuda:0"
+      sample_rate: 24000
+      warmup_on_init: true
+      temperature: 0.7
+
+    chatterbox:
+      voice: "default"
+      exaggeration: 0.6
+      device: "cuda:0"
+      enable_streaming: true
+
+    server:
+      host: "0.0.0.0"
+      http_port: 8080
+      ws_port: 8765
+      workers: 1
+
+    session:
+      max_duration_seconds: 240
+      idle_timeout_seconds: 30
+      auto_reset_context: true
+
+    humanize:
+      enable_fillers: true
+      filler_probability: 0.25
+      enable_pauses: true
+      enable_breath_sounds: true
+
+    emotion:
+      enabled: true
+      device: "cuda:0"
+      update_interval_ms: 750
+
+---
+# Secret template (apply separately with actual values)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: maya-secrets
+  namespace: maya
+  labels:
+    app: maya
+type: Opaque
+stringData:
+  hf-token: "YOUR_HUGGINGFACE_TOKEN_HERE"  # Replace with actual token

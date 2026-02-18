@@ -1,0 +1,58 @@
+{
+  "hmm": {
+    "text": "Hmm...",
+    "duration": 2.96
+  },
+  "well": {
+    "text": "Well...",
+    "duration": 0.32
+  },
+  "lets_see": {
+    "text": "Let me see...",
+    "duration": 0.64
+  },
+  "so": {
+    "text": "So...",
+    "duration": 0.32
+  },
+  "okay": {
+    "text": "Okay...",
+    "duration": 0.32
+  },
+  "mm_hmm": {
+    "text": "Mm-hmm.",
+    "duration": 2.96
+  },
+  "yeah": {
+    "text": "Yeah.",
+    "duration": 0.32
+  },
+  "uh_huh": {
+    "text": "Uh-huh.",
+    "duration": 0.4
+  },
+  "right": {
+    "text": "Right.",
+    "duration": 0.37983333333333336
+  },
+  "i_see": {
+    "text": "I see.",
+    "duration": 0.64
+  },
+  "oh": {
+    "text": "Oh...",
+    "duration": 0.16
+  },
+  "ah": {
+    "text": "Ah...",
+    "duration": 0.16
+  },
+  "you_know": {
+    "text": "You know...",
+    "duration": 0.4
+  },
+  "i_mean": {
+    "text": "I mean...",
+    "duration": 0.48
+  }
+}

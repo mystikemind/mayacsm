@@ -1,0 +1,8 @@
+# Project Maya - Kubernetes Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: maya
+  labels:
+    app: maya
+    environment: production

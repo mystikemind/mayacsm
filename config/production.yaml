@@ -1,0 +1,91 @@
+# Project Maya - Production Configuration
+# Optimized settings for production deployment
+
+project:
+  name: maya
+  version: "0.1.0"
+  environment: production
+  debug: false
+  log_level: INFO
+  log_json: true  # JSON logs for aggregation
+
+# Moshi S2S Engine - Production tuned
+moshi:
+  model_name: "kyutai/moshika-pytorch-bf16"
+  quantization: "int8"  # INT8 for memory efficiency
+  device: "cuda:0"
+  sample_rate: 24000
+  frame_duration_ms: 80
+  warmup_on_init: true  # Always warmup in production
+  temperature: 0.7  # Slightly lower for consistency
+  temperature_text: 0.6
+  top_k: 200
+  top_k_text: 20
+
+# Chatterbox TTS - Production settings
+chatterbox:
+  voice: "default"
+  exaggeration: 0.6
+  cfg_weight: 0.5
+  device: "cuda:0"
+  enable_streaming: true
+  chunk_size: 1024  # Larger chunks for efficiency
+
+# Voice Activity Detection - Conservative settings
+vad:
+  threshold: 0.6  # Higher threshold reduces false positives
+  min_speech_duration_ms: 300
+  min_silence_duration_ms: 400
+  speech_pad_ms: 50
+
+# Server Configuration - Production
+server:
+  host: "0.0.0.0"
+  http_port: 8080
+  ws_port: 8765
+  workers: 1  # Single worker for GPU-bound workload
+  cors_origins:
+    - "https://maya.example.com"
+    - "https://app.example.com"
+
+# Session Management - Production limits
+session:
+  max_duration_seconds: 240  # Conservative limit
+  context_window_turns: 15
+  idle_timeout_seconds: 30  # Faster cleanup
+  context_reset_warning_seconds: 20
+  auto_reset_context: true
+
+# Humanization - Moderate settings
+humanize:
+  enable_fillers: true
+  filler_probability: 0.25  # Slightly less frequent
+  enable_pauses: true
+  enable_breath_sounds: true
+  breath_volume: 0.2
+
+# Emotion Detection
+emotion:
+  enabled: true
+  model_name: "r-f/wav2vec-english-speech-emotion-recognition"
+  device: "cuda:0"
+  update_interval_ms: 750  # Less frequent updates
+
+# Performance Targets - Strict
+performance:
+  quick_path_latency_target_ms: 200
+  enhanced_path_latency_target_ms: 350
+  max_vram_usage_gb: 20.0  # Leave headroom
+
+# Monitoring
+monitoring:
+  metrics_enabled: true
+  metrics_port: 9090
+  health_check_interval_seconds: 15
+  ready_timeout_seconds: 180
+
+# Security
+security:
+  rate_limit_requests_per_minute: 60
+  max_concurrent_sessions: 1
+  require_authentication: true
