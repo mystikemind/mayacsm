@@ -21,8 +21,9 @@ import logging
 import time
 import sys
 import math
+from pathlib import Path
 
-sys.path.insert(0, '/home/ec2-user/SageMaker/csm')
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / 'csm'))
 
 # CRITICAL: Set torch._dynamo cache limit to prevent RecompileLimitExceeded errors
 # This is needed because different input shapes cause recompilation

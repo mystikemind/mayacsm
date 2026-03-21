@@ -46,6 +46,7 @@ def _get_csm_root() -> Path:
     if env_path:
         return Path(env_path)
     candidates = [
+        Path(__file__).parent.parent / "csm",
         Path("/home/ec2-user/SageMaker/csm"),
         Path.cwd().parent / "csm",
     ]
@@ -178,7 +179,7 @@ LLM = LLMConfig()
 class TTSConfig:
     """Text-to-Speech settings."""
     device: str = "cuda"
-    device_index: int = 1             # Use GPU 1 to avoid contention with vLLM (GPU 0)
+    device_index: int = int(os.environ.get("MAYA_GPU_INDEX", "0"))
     speaker_id: int = 0               # Maya's voice
     max_audio_length_ms: int = 5000   # 5 seconds max - prevents endless generation
     context_turns: int = 8            # More context for prosodic continuity (Sesame uses 90s)
