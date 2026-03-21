@@ -755,7 +755,6 @@ class RealStreamingTTSEngine:
                 sample = self._model.generate_frame(
                     curr_tokens, curr_tokens_mask, curr_pos,
                     temperature=TTS_CONFIG.temperature, topk=TTS_CONFIG.topk,
-                    depth_decoder_temperature=TTS_CONFIG.depth_decoder_temperature
                 )
 
                 # Check for EOS (all zeros)
@@ -876,7 +875,6 @@ class RealStreamingTTSEngine:
                 sample = self._model.generate_frame(
                     curr_tokens, curr_tokens_mask, curr_pos,
                     temperature=TTS_CONFIG.temperature, topk=TTS_CONFIG.topk,
-                    depth_decoder_temperature=TTS_CONFIG.depth_decoder_temperature
                 )
 
                 if torch.all(sample == 0):
