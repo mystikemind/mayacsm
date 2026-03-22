@@ -251,7 +251,7 @@ class RealStreamingTTSEngine:
 
         if finetuned_path:
             # Load base model architecture first
-            model = Model.from_pretrained("sesame/csm-1b")
+            model = Model.from_pretrained("senstella/csm-expressiva-1b")
             # Load fine-tuned weights (already merged with base)
             state_dict = torch.load(finetuned_path, map_location="cuda", weights_only=False)
             # Handle potential nested state dict
@@ -264,7 +264,7 @@ class RealStreamingTTSEngine:
             logger.info("  *** FINE-TUNED WEIGHTS LOADED SUCCESSFULLY ***")
         else:
             logger.warning("  *** WARNING: No fine-tuned model found, using base CSM-1B ***")
-            model = Model.from_pretrained("sesame/csm-1b")
+            model = Model.from_pretrained("senstella/csm-expressiva-1b")
 
         # Move model to configured device (already set above)
         model.to(device=device, dtype=torch.bfloat16)
