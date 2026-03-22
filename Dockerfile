@@ -1,17 +1,14 @@
-FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 
-# System deps
+# System deps (devel image already has gcc/build-essential)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     libsndfile1 \
     ffmpeg \
     curl \
-    gcc \
-    g++ \
-    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -24,7 +21,6 @@ COPY requirements.txt ./
 COPY maya/ ./maya/
 COPY assets/ ./assets/
 COPY server.py ./
-COPY .env ./
 
 # Install Python deps
 RUN pip install --no-cache-dir -r requirements.txt
@@ -36,6 +32,9 @@ ENV MAYA_PROJECT_ROOT=/app
 ENV MAYA_CSM_ROOT=/app/csm
 ENV MAYA_GPU_INDEX=0
 ENV PORT=8002
+
+# CUDA stubs path so torch.compile/triton can link against libcuda
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH}
 
 EXPOSE 8002
 
